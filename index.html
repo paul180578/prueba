@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+/* General */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f2f5;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 700px;
+    margin: 0 auto;
+    background: #ffffff;
+    padding: 30px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    border: 1px solid #ddd;
+}
+
+h1 {
+    text-align: center;
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 2rem;
+    font-weight: 600;
+}
+
+h2 {
+    margin-top: 30px;
+    color: #444;
+    font-size: 1.5rem;
+    font-weight: 500;
+}
+
+h3 {
+    margin-top: 15px;
+    color: #666;
+    font-size: 1.25rem;
+}
+
+button {
+    display: inline-block;
+    margin: 10px 0;
+    padding: 12px 20px;
+    border: none;
+    background-color: #007bff;
+    color: #ffffff;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: center;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+button:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+
+button:active {
+    background-color: #004494;
+    transform: scale(0.98);
+}
+
+.recording-status {
+    display: inline-block;
+    margin-left: 15px;
+    color: #ff4d4d;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: opacity 0.3s ease;
+}
+
+input[type="text"] {
+    width: calc(100% - 24px);
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+input[type="text"]:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 4px rgba(0, 123, 255, 0.3);
+}
+
+@media (max-width: 768px) {
+    .container {
+        padding: 15px;
+    }
+}
+
+    </style>
+    <title>Conversor de Voz a Texto y Texto a Voz</title>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Conversor de Voz a Texto y Texto a Voz</h1>
+
+        <div class="voice-to-text">
+            <h2>Convertir Voz a Texto</h2>
+            <button id="start-record-btn">Comenzar a Grabar</button>
+            <span id="recording-status" class="recording-status" style="display: none;">Grabando...</span>
+            <button id="stop-record-btn">Detener Grabación</button>
+            <button id="download-btn">Descargar Texto</button>
+            <h3>Texto Reconocido:</h3>
+            <p id="recognized-text">Aquí aparecerá el texto...</p>
+        </div>
+
+        <div class="text-to-voice">
+            <h2>Convertir Texto a Voz</h2>
+            <input type="text" id="text-to-speak" placeholder="Escribe aquí el texto..." value="Hola, soy una IA." />
+            <button id="speak-btn">Reproducir Texto</button>
+        </div>
+        <p>&copy;Copyright - Derechos Reservados - (Ingeniero Barrientos, Ingeniero Cano y Huamán)</p>
+    </div>
+    <script>
+        import("model.json")
+        // Verificar si la API de SpeechRecognition está disponible
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            alert("Tu navegador no soporta la API de reconocimiento de voz.");
+        }
+
+        // Variables para el reconocimiento de voz
+        let recognizing = false;
+
+        // Crear una instancia de SpeechRecognition
+        const recognition = new SpeechRecognition();
+
+        // Configura la instancia de reconocimiento de voz
+        recognition.lang = 'es-ES'; // Configura el idioma a ruso
+        recognition.interimResults = false;
+        recognition.continuous = true; // Configura para grabar continuamente
+
+        // Evento cuando el reconocimiento de voz inicia
+        recognition.onstart = function () {
+            recognizing = true;
+            document.getElementById("recording-status").style.display = "inline";
+            console.log("Reconocimiento de voz iniciado");
+        };
+
+        // Evento cuando se obtiene un resultado del reconocimiento
+        recognition.onresult = function (event) {
+            const transcript = event.results[0][0].transcript;
+            document.getElementById("recognized-text").innerText = transcript;
+            console.log("Texto reconocido: " + transcript);
+            document.getElementById("text-to-speak").value = transcript;
+
+        };
+
+        // Evento cuando el reconocimiento de voz finaliza
+        recognition.onend = function () {
+            recognizing = false;
+            document.getElementById("recording-status").style.display = "none";
+            console.log("Reconocimiento de voz detenido");
+        };
+
+        // Manejar errores durante el reconocimiento
+        recognition.onerror = function (event) {
+            console.error("Error en el reconocimiento de voz: ", event.error);
+        };
+
+        // Iniciar el reconocimiento de voz al hacer clic en el botón correspondiente
+        document.getElementById("start-record-btn").onclick = function () {
+            if (!recognizing) {
+                recognition.start();
+            }
+        };
+
+        // Detener el reconocimiento de voz
+        document.getElementById("stop-record-btn").onclick = function () {
+            if (recognizing) {
+                recognition.stop();
+            }
+        };
+
+        // Descargar el texto reconocido como archivo .txt
+        document.getElementById("download-btn").onclick = function () {
+            const text = document.getElementById("recognized-text").innerText;
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'texto_reconocido.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        };
+
+        // Funcionalidad para hablar texto usando Speech Synthesis
+        document.getElementById("speak-btn").onclick = function () {
+            const text = document.getElementById("text-to-speak").value;
+            const utterance = new SpeechSynthesisUtterance(text);
+            // Configura la velocidad de la voz (más lento de lo normal)¿
+            utterance.rate = 0.6; // Cambia el valor a 0.8 para una voz más lenta
+            // Configura el tono de la voz
+            utterance.pitch = 1.2; // Ajusta la entonación, 1 es el valor normal
+            // Reproduce el texto
+            speechSynthesis.speak(utterance);
+        };
+
+    </script>
+</body>
+
+</html>
